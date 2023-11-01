@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 # UserChannel allows to communicate with a single user
+# Warning: Do not memoize anything called by the "receive" method because
+# the channel uses the same instance!
 class UserChannel < ApplicationCable::Channel
   def subscribed
     stream_from user_id
@@ -15,7 +17,7 @@ class UserChannel < ApplicationCable::Channel
 
     execute_action
   rescue StandardError => e
-    ActionCable.server.broadcast(user_id, { error: e })
+    ActionCable.server.broadcast(user_id, { error: e, included_in_response: })
 
     raise e
   end
@@ -24,17 +26,17 @@ class UserChannel < ApplicationCable::Channel
 
   def execute_action
     ExecuteActionJob.perform_async(
-      action.to_s, controller.sanitize(parameters, user).to_hash,
+      action.to_s, controller.sanitize(ActionController::Parameters.new(parameters), user).to_hash,
       controller.to_s, user_id, included_in_response
     )
   end
 
   def controller
-    @controller ||= "Controllers::#{p_controller}::#{p_action}".constantize
+    "Controllers::#{p_controller}::#{p_action}".constantize
   end
 
   def action
-    @action ||= "Actions::#{p_controller}::#{p_action}".constantize
+    "Actions::#{p_controller}::#{p_action}".constantize
   end
 
   # used for the client to associate the response to the sender
@@ -43,19 +45,19 @@ class UserChannel < ApplicationCable::Channel
     @data['included_in_response'] || {}
   end
 
-  def p_controller
-    @p_controller ||= @data['_controller']&.camelize
-  end
-
-  def p_action
-    @p_action ||= @data['_action']&.camelize
-  end
-
   def parameters
-    @parameters ||= @data['params']
+    @data['params'] || {}
   end
 
   def user
-    @user ||= defined?(current_user) && current_user
+    defined?(current_user) && current_user
+  end
+
+  def p_controller
+    @data['_controller']&.camelize
+  end
+
+  def p_action
+    @data['_action']&.camelize
   end
 end

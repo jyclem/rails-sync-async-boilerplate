@@ -14,7 +14,7 @@ class ExecuteActionJob
       room_id, { data: controller.constantize.serialize(result), included_in_response: }
     )
   rescue StandardError => e
-    ActionCable.server.broadcast(room_id, { error: e }) if controller && room_id
+    ActionCable.server.broadcast(room_id, { error: e, included_in_response: }) if controller && room_id
 
     raise e
   end
