@@ -72,7 +72,9 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
         execute_async_job
       end.to raise_error(error_raised)
 
-      expect(ActionCable.server).to have_received(:broadcast).with(room_id, { error: error_raised })
+      expect(ActionCable.server).to have_received(:broadcast).with(
+        room_id, { error: error_raised, included_in_response: { 'baz' => 'qux' } }
+      )
     end
   end
 

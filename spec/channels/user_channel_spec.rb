@@ -70,7 +70,7 @@ RSpec.describe UserChannel, type: :channel do
 
       receive_data
 
-      expect(controller).to have_received(:sanitize).with({ foo: 'bar' }, nil)
+      expect(controller).to have_received(:sanitize).with(ActionController::Parameters.new({ foo: 'bar' }), nil)
     end
 
     context 'when an error is raised' do
@@ -84,7 +84,9 @@ RSpec.describe UserChannel, type: :channel do
       it 'broadcasts the error on the channel' do
         expect { receive_data }.to raise_error(error_raised)
 
-        expect(ActionCable.server).to have_received(:broadcast).with(user_id, { error: error_raised })
+        expect(ActionCable.server).to have_received(:broadcast).with(
+          user_id, { error: error_raised, included_in_response: { baz: 'qux' } }
+        )
       end
     end
 
