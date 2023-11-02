@@ -2,7 +2,8 @@
 
 require 'rails_helper'
 
-RSpec.describe UserChannelReceiveJob, type: :job do # rubocop:disable Metrics/BlockLength
+# rubocop:disable Metrics/BlockLength
+RSpec.describe UserChannelReceiveJob, type: :job do
   subject(:user_channel_receive_job_perform) { described_class.perform_sync(room_id, data, nil) }
 
   let(:room_id) { 'room_id' }
@@ -23,8 +24,8 @@ RSpec.describe UserChannelReceiveJob, type: :job do # rubocop:disable Metrics/Bl
   let(:action) { double('action', to_s: 'action') }
 
   before do
-    allow_any_instance_of(described_class).to receive(:controller).and_return(controller)
-    allow_any_instance_of(described_class).to receive(:action).and_return(action)
+    allow_any_instance_of(described_class).to receive(:constantize_controller).and_return(controller)
+    allow_any_instance_of(described_class).to receive(:constantize_action).and_return(action)
     allow(ExecuteActionJob).to receive(:perform_sync)
     allow(ActionCable.server).to receive(:broadcast)
   end
@@ -54,12 +55,58 @@ RSpec.describe UserChannelReceiveJob, type: :job do # rubocop:disable Metrics/Bl
     expect(controller).to have_received(:sanitize).with(ActionController::Parameters.new({ foo: 'bar' }), nil)
   end
 
+  context 'when data has several requests' do
+    let(:data) do
+      {
+        '1' => { '_controller' => _controller, '_action' => _action, 'params' => params },
+        '2' => { '_controller' => _controller, '_action' => _action, 'params' => params }
+      }
+    end
+
+    it 'calls ExecuteActionJob twice with the right parameters' do
+      user_channel_receive_job_perform
+
+      expect(ExecuteActionJob).to have_received(:perform_sync).with(
+        'action', { foo: 'bar' }, 'controller', 'room_id',
+        { included_in_response: {}, no_broadcast: nil, broadcast_error_only: nil }
+      ).twice
+    end
+
+    context 'when an error is encountered' do
+      let(:data) do
+        {
+          '1' => { '_controller' => _controller, '_action' => _action, 'params' => params },
+          '2' => { '_controller' => nil, '_action' => nil, 'params' => params }, # <= error
+          '3' => { '_controller' => _controller, '_action' => _action, 'params' => params }
+        }
+      end
+
+      it 'does not execute the action after the error occured' do
+        expect { user_channel_receive_job_perform }.to raise_error(
+          StandardError, "missing '_controller' or '_action' parameters"
+        )
+
+        expect(ExecuteActionJob).to have_received(:perform_sync).with(
+          'action', { foo: 'bar' }, 'controller', 'room_id',
+          { included_in_response: {}, no_broadcast: nil, broadcast_error_only: nil }
+        ).once
+      end
+    end
+  end
+
   context 'when _controller is missing in the parameters' do
     let(:_controller) { nil }
 
-    it 'raises an exception' do
+    it 'raises and broadcasts an error' do
       expect { user_channel_receive_job_perform }.to raise_error(
         StandardError, "missing '_controller' or '_action' parameters"
+      )
+
+      expect(ActionCable.server).to have_received(:broadcast).with(
+        room_id, {
+          error: "missing '_controller' or '_action' parameters",
+          included_in_response: { 'baz' => 'qux' }
+        }
       )
     end
   end
@@ -67,9 +114,16 @@ RSpec.describe UserChannelReceiveJob, type: :job do # rubocop:disable Metrics/Bl
   context 'when _action is missing in the parameters' do
     let(:_action) { nil }
 
-    it 'raises an exception' do
+    it 'raises and broadcasts an error' do
       expect { user_channel_receive_job_perform }.to raise_error(
         StandardError, "missing '_controller' or '_action' parameters"
+      )
+
+      expect(ActionCable.server).to have_received(:broadcast).with(
+        room_id, {
+          error: "missing '_controller' or '_action' parameters",
+          included_in_response: { 'baz' => 'qux' }
+        }
       )
     end
   end
@@ -77,8 +131,12 @@ RSpec.describe UserChannelReceiveJob, type: :job do # rubocop:disable Metrics/Bl
   context 'when the controller considers that it is not authorized' do
     before { allow(controller).to receive(:authorized?).and_return(false) }
 
-    it 'raises an exception' do
+    it 'raises and broadcasts an error' do
       expect { user_channel_receive_job_perform }.to raise_error(StandardError, 'unauthorized')
+
+      expect(ActionCable.server).to have_received(:broadcast).with(
+        room_id, { error: 'unauthorized', included_in_response: { 'baz' => 'qux' } }
+      )
     end
   end
 
@@ -87,11 +145,11 @@ RSpec.describe UserChannelReceiveJob, type: :job do # rubocop:disable Metrics/Bl
 
     before { allow(ExecuteActionJob).to receive(:perform_sync).and_raise(error_raised) }
 
-    it 'broadcasts the error on the channel' do
-      expect { user_channel_receive_job_perform }.to raise_error(error_raised)
+    it 'raises and broadcasts an error' do
+      expect { user_channel_receive_job_perform }.to raise_error(StandardError, 'error')
 
       expect(ActionCable.server).to have_received(:broadcast).with(
-        room_id, { error: error_raised, included_in_response: { 'baz' => 'qux' } }
+        room_id, { error: 'error', included_in_response: { 'baz' => 'qux' } }
       )
     end
   end
@@ -102,10 +160,11 @@ RSpec.describe UserChannelReceiveJob, type: :job do # rubocop:disable Metrics/Bl
 
     before { allow(ExecuteActionJob).to receive(:perform_sync).and_raise(error_raised) }
 
-    it 'does not broadcast the error on the channel' do
-      expect { user_channel_receive_job_perform }.to raise_error(error_raised)
+    it 'raises an error but does not broadcast the error on the channel' do
+      expect { user_channel_receive_job_perform }.to raise_error(StandardError, 'error')
 
       expect(ActionCable.server).not_to have_received(:broadcast)
     end
   end
 end
+# rubocop:enable Metrics/BlockLength

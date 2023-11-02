@@ -95,14 +95,8 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
 
     before { allow(Actions::Base).to receive(:new).and_raise(error_raised) }
 
-    it 'broadcasts an error to the correct room' do
-      expect do
-        execute_action_job
-      end.to raise_error(error_raised)
-
-      expect(ActionCable.server).to have_received(:broadcast).with(
-        room_id, { error: error_raised, included_in_response: { 'baz' => 'qux' } }
-      )
+    it 'forwards the exception' do
+      expect { execute_action_job }.to raise_error(error_raised)
     end
   end
 
