@@ -3,15 +3,23 @@
 require 'rails_helper'
 
 RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLength
-  subject(:execute_async_job) do
-    ExecuteActionJob.perform_sync(action, args, controller, room_id, included_in_response)
+  subject(:execute_action_job) do
+    described_class.perform_sync(action, args, controller, room_id, settings)
   end
 
   let(:action) { 'Actions::Base' }
   let(:args) { { 'foo' => 'bar' } }
   let(:controller) { 'Controllers::Base' }
   let(:room_id) { SecureRandom.uuid }
+  let(:settings) do
+    {
+      'included_in_response' => included_in_response, 'no_broadcast' => no_broadcast,
+      'broadcast_error_only' => broadcast_error_only
+    }
+  end
   let(:included_in_response) { { 'baz' => 'qux' } }
+  let(:no_broadcast) { nil }
+  let(:broadcast_error_only) { nil }
 
   let(:instance_of_actions_base) { double('instance_of_actions_base') }
   let(:result_of_actions_base_call) { double('result_of_actions_base_call') }
@@ -27,14 +35,14 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
   end
 
   it 'calls the associated action' do
-    execute_async_job
+    execute_action_job
 
     expect(Actions::Base).to have_received(:new).with(foo: 'bar')
     expect(instance_of_actions_base).to have_received(:call)
   end
 
   it 'broadcasts the result to the correct room' do
-    execute_async_job
+    execute_action_job
 
     expect(Controllers::Base).to have_received(:serialize).with(result_of_actions_base_call)
     expect(ActionCable.server).to have_received(:broadcast).with(
@@ -46,7 +54,7 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
     let(:controller) { nil }
 
     it 'does not broadcast the result' do
-      execute_async_job
+      execute_action_job
 
       expect(ActionCable.server).not_to have_received(:broadcast)
     end
@@ -56,7 +64,27 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
     let(:room_id) { nil }
 
     it 'does not broadcast the result' do
-      execute_async_job
+      execute_action_job
+
+      expect(ActionCable.server).not_to have_received(:broadcast)
+    end
+  end
+
+  context 'when no broadcast_error_only is given in the settings of the parameters' do
+    let(:broadcast_error_only) { true }
+
+    it 'does not broadcast the result' do
+      execute_action_job
+
+      expect(ActionCable.server).not_to have_received(:broadcast)
+    end
+  end
+
+  context 'when no no_broadcast is given in the settings of the parameters' do
+    let(:no_broadcast) { true }
+
+    it 'does not broadcast the result' do
+      execute_action_job
 
       expect(ActionCable.server).not_to have_received(:broadcast)
     end
@@ -69,7 +97,7 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
 
     it 'broadcasts an error to the correct room' do
       expect do
-        execute_async_job
+        execute_action_job
       end.to raise_error(error_raised)
 
       expect(ActionCable.server).to have_received(:broadcast).with(
@@ -87,7 +115,22 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
 
     it 'does not broadcast an error' do
       expect do
-        execute_async_job
+        execute_action_job
+      end.to raise_error(error_raised)
+
+      expect(ActionCable.server).not_to have_received(:broadcast)
+    end
+  end
+
+  context 'when an error is raised but there no_broadcast is set to true in the settings of the parameter' do
+    let(:no_broadcast) { true }
+    let(:error_raised) { StandardError.new('error') }
+
+    before { allow(Actions::Base).to receive(:new).and_raise(error_raised) }
+
+    it 'does not broadcast an error' do
+      expect do
+        execute_action_job
       end.to raise_error(error_raised)
 
       expect(ActionCable.server).not_to have_received(:broadcast)

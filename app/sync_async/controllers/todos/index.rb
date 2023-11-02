@@ -5,7 +5,7 @@ module Controllers
     # Classic index
     class Index < Controllers::Base
       def authorized?
-        true
+        false
       end
 
       def serialize
