@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe ApplicationCable::Connection, type: :channel do
+RSpec.describe ApplicationCable::Connection do
   it 'successfully connects' do
     connect '/cable'
     expect(connection.room_id).to be_present

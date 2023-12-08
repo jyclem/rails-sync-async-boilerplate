@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# rubocop:disable Metrics/BlockLength
+# rubocop:disable Metrics/BlockLength, RSpec/MultipleMemoizedHelpers
 RSpec.describe SyncAsyncController, type: :request do
   subject(:sync_async) do
     instance.send(:remove_useless_params)
@@ -11,20 +11,20 @@ RSpec.describe SyncAsyncController, type: :request do
 
   let(:instance) { described_class.new }
   let(:params) { { foo: 'bar' } }
-  let(:request) { OpenStruct.new(headers: {}) }
+  let(:request) { OpenStruct.new(headers: {}) } # rubocop:disable Style/OpenStructUse
   let(:response) { ActionDispatch::Response.new.tap { _1.status = :ok } }
   let(:result) { { baz: 'qux' } }
-  let(:controller) { double('controller', authorized?: true, sanitize: { foo: 'bar' }, serialize: result) }
-  let(:action) { double('action', to_s: 'action', call: 'action_result') }
+  let(:controller) { double('controller', authorized?: true, sanitize: { foo: 'bar' }, serialize: result) } # rubocop:disable RSpec/VerifiedDoubles
+  let(:action) { double('action', to_s: 'action', call: 'action_result') } # rubocop:disable RSpec/VerifiedDoubles
   let(:job_id) { SecureRandom.hex }
 
   before do
-    allow(instance).to receive(:params).and_return(params)
-    allow(instance).to receive(:request).and_return(request)
+    allow(instance).to receive_messages(params:)
+    allow(instance).to receive_messages(request:)
     instance.instance_variable_set(:@_response, response) # allow(instance).to receive(:response).and_return(response)
-    allow(instance).to receive(:action_name).and_return(:index)
-    allow(instance).to receive(:controller).and_return(controller)
-    allow(instance).to receive(:action).and_return(action)
+    allow(instance).to receive_messages(action_name: :index)
+    allow(instance).to receive_messages(controller:)
+    allow(instance).to receive_messages(action:)
 
     allow(ExecuteActionJob).to receive(:perform_async).and_return(job_id)
   end
@@ -47,7 +47,7 @@ RSpec.describe SyncAsyncController, type: :request do
     end
 
     context 'when the controller considers it is not authorized' do
-      let(:controller) { double('controller', authorized?: false, sanitize: { foo: 'bar' }, serialize: result) }
+      let(:controller) { double('controller', authorized?: false, sanitize: { foo: 'bar' }, serialize: result) } # rubocop:disable RSpec/VerifiedDoubles
 
       before { allow(Rails.logger).to receive(:send) }
 
@@ -129,7 +129,7 @@ RSpec.describe SyncAsyncController, type: :request do
   end
 
   context 'when running asynchronously' do
-    let(:request) { OpenStruct.new(headers: { 'async' => 'true' }) }
+    let(:request) { OpenStruct.new(headers: { 'async' => 'true' }) } # rubocop:disable Style/OpenStructUse
 
     it_behaves_like 'running both synchronously and asynchronously'
 
@@ -160,4 +160,4 @@ RSpec.describe SyncAsyncController, type: :request do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength
+# rubocop:enable Metrics/BlockLength, RSpec/MultipleMemoizedHelpers

@@ -2,7 +2,8 @@
 
 require 'rails_helper'
 
-RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLength
+# rubocop:disable RSpec/MultipleMemoizedHelpers
+RSpec.describe ExecuteActionJob do
   subject(:execute_action_job) do
     described_class.perform_sync(action, args, controller, room_id, settings)
   end
@@ -21,9 +22,9 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
   let(:no_broadcast) { nil }
   let(:broadcast_error_only) { nil }
 
-  let(:instance_of_actions_base) { double('instance_of_actions_base') }
-  let(:result_of_actions_base_call) { double('result_of_actions_base_call') }
-  let(:result_of_controllers_base_serialize) { double('result_of_controllers_base_serialize') }
+  let(:instance_of_actions_base) { class_double(Actions::Base) }
+  let(:result_of_actions_base_call) { double('result_of_actions_base_call') } # rubocop:disable RSpec/VerifiedDoubles
+  let(:result_of_controllers_base_serialize) { double('result_of_controllers_base_serialize') } # rubocop:disable RSpec/VerifiedDoubles
 
   before do
     allow(Actions::Base).to receive(:new).and_return(instance_of_actions_base)
@@ -34,14 +35,14 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
     allow(ActionCable.server).to receive(:broadcast)
   end
 
-  it 'calls the associated action' do
+  it 'calls the associated action' do # rubocop:disable RSpec/MultipleExpectations
     execute_action_job
 
     expect(Actions::Base).to have_received(:new).with(foo: 'bar')
     expect(instance_of_actions_base).to have_received(:call)
   end
 
-  it 'broadcasts the result to the correct room' do
+  it 'broadcasts the result to the correct room' do # rubocop:disable RSpec/MultipleExpectations
     execute_action_job
 
     expect(Controllers::Base).to have_received(:serialize).with(result_of_actions_base_call)
@@ -107,7 +108,7 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
 
     before { allow(Actions::Base).to receive(:new).and_raise(error_raised) }
 
-    it 'does not broadcast an error' do
+    it 'does not broadcast an error' do # rubocop:disable RSpec/MultipleExpectations
       expect do
         execute_action_job
       end.to raise_error(error_raised)
@@ -122,7 +123,7 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
 
     before { allow(Actions::Base).to receive(:new).and_raise(error_raised) }
 
-    it 'does not broadcast an error' do
+    it 'does not broadcast an error' do # rubocop:disable RSpec/MultipleExpectations
       expect do
         execute_action_job
       end.to raise_error(error_raised)
@@ -131,3 +132,4 @@ RSpec.describe ExecuteActionJob, type: :job do # rubocop:disable Metrics/BlockLe
     end
   end
 end
+# rubocop:enable RSpec/MultipleMemoizedHelpers

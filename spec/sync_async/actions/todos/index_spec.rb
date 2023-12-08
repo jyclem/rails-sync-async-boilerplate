@@ -7,8 +7,6 @@ RSpec.describe Actions::Todos::Index do
 
   let!(:todos) { Todo.create!(Array.new(3) { { name: Faker::Lorem.word } }) } # we would normally use a factory here
 
-  before(:all) { Todo.destroy_all }
-
   before { allow(Tasks::Todos::LogTodos).to receive(:call) }
 
   it { is_expected.to eql(todos) }

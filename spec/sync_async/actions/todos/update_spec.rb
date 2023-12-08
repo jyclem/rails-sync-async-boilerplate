@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Actions::Todos::Update do # rubocop:disable Metrics/BlockLength
+RSpec.describe Actions::Todos::Update do
   subject(:call) { described_class.new(id: todo_id, name: new_name).call }
 
   let!(:todo) { Todo.create!(name: Faker::Lorem.word) } # we would normally use a factory here

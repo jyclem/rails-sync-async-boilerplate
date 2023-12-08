@@ -1,29 +1,27 @@
 # frozen_string_literal: true
 
 shared_examples 'GET /show' do
-  describe do
-    subject(:get_show) { get(todo_url(todo), as: :json) }
+  subject(:get_show) { get(todo_url(todo), headers:, as: :json) }
 
-    let!(:todo) { Todo.create!(valid_attributes) }
+  let!(:todo) { Todo.create!(valid_attributes) }
 
-    it 'renders a successful response' do
-      get_show
+  it 'renders a successful response' do
+    get_show
 
-      expect(response).to be_successful
-    end
+    expect(response).to be_successful
+  end
 
-    it 'returns the correct values' do
-      get_show
+  it 'returns the correct values' do
+    get_show
 
-      expect(JSON.parse(response.body)).to eql('id' => todo.id, 'name' => todo.name)
-    end
+    expect(response.parsed_body).to eql('id' => todo.id, 'name' => todo.name)
+  end
 
-    it 'logs the result' do
-      allow(Rails.logger).to receive(:info)
+  it 'logs the result' do
+    allow(Rails.logger).to receive(:info)
 
-      get_show
+    get_show
 
-      expect(Rails.logger).to have_received(:info).with("LOGGING: show for #{todo.name}")
-    end
+    expect(Rails.logger).to have_received(:info).with("LOGGING: show for #{todo.name}")
   end
 end

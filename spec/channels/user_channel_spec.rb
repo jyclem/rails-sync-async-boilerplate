@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe UserChannel, type: :channel do
+RSpec.describe UserChannel do
   let(:room_id) { SecureRandom.uuid }
 
   before do

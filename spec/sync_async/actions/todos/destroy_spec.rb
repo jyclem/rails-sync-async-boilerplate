@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe Actions::Todos::Destroy do
   subject(:call) { described_class.new(id: todo_id).call }
 
-  let!(:todo) { Todo.create!(name: Faker::Lorem.word) }  # we would normally use a factory here
+  let!(:todo) { Todo.create!(name: Faker::Lorem.word) } # we would normally use a factory here
   let(:todo_id) { todo.id }
 
   before { allow(Tasks::Todos::LogTodos).to receive(:call) }

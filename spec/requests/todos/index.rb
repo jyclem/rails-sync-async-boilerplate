@@ -1,29 +1,27 @@
 # frozen_string_literal: true
 
 shared_examples 'GET /index' do
-  describe do
-    subject(:get_index) { get(todos_url, headers: valid_headers, as: :json) }
+  subject(:get_index) { get(todos_url, headers:, as: :json) }
 
-    let!(:todo) { Todo.create! valid_attributes }
+  let!(:todo) { Todo.create! valid_attributes }
 
-    it 'renders a successful response' do
-      get_index
+  it 'renders a successful response' do
+    get_index
 
-      expect(response).to be_successful
-    end
+    expect(response).to be_successful
+  end
 
-    it 'returns the correct values' do
-      get_index
+  it 'returns the correct values' do
+    get_index
 
-      expect(JSON.parse(response.body)).to eql([{ 'id' => todo.id, 'name' => todo.name }])
-    end
+    expect(response.parsed_body).to eql([{ 'id' => todo.id, 'name' => todo.name }])
+  end
 
-    it 'logs the result' do
-      allow(Rails.logger).to receive(:info)
+  it 'logs the result' do
+    allow(Rails.logger).to receive(:info)
 
-      get_index
+    get_index
 
-      expect(Rails.logger).to have_received(:info).with("LOGGING: index for #{valid_attributes[:name]}")
-    end
+    expect(Rails.logger).to have_received(:info).with("LOGGING: index for #{valid_attributes[:name]}")
   end
 end

@@ -12,7 +12,7 @@ require 'rails_helper'
 
 Dir["#{__dir__}/todos/*.rb"].each { |file| require_relative file }
 
-RSpec.describe '/todos', type: :request do
+RSpec.describe '/todos' do
   let(:valid_attributes) do
     { name: Faker::Lorem.word }
   end
@@ -21,7 +21,7 @@ RSpec.describe '/todos', type: :request do
     { name: nil }
   end
 
-  let(:valid_headers) do
+  let(:headers) do
     {}
   end
 
@@ -29,11 +29,11 @@ RSpec.describe '/todos', type: :request do
   it_behaves_like 'GET /show'
 
   it_behaves_like 'POST /create'
-  it_behaves_like('POST /create') { let(:valid_headers) { { async: 'true' } } }
+  it_behaves_like('POST /create') { let(:headers) { { async: 'true' } } }
 
   it_behaves_like 'PATCH /update'
-  it_behaves_like('PATCH /update') { let(:valid_headers) { { async: 'true' } } }
+  it_behaves_like('PATCH /update') { let(:headers) { { async: 'true' } } }
 
   it_behaves_like 'DELETE /destroy'
-  it_behaves_like('DELETE /destroy') { let(:valid_headers) { { async: 'true' } } }
+  it_behaves_like('DELETE /destroy') { let(:headers) { { async: 'true' } } }
 end

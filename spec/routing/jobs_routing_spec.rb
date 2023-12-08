@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe JobsController, type: :routing do
+RSpec.describe JobsController do
   describe 'routing' do
     it 'routes to #show' do
       expect(get: '/jobs/1').to route_to('jobs#show', id: '1')

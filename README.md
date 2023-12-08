@@ -3,9 +3,9 @@
 ## Installation
 
 * clone this project
-* `bundle install`
-* (optional: if you don't use localhost, update config/initializers/cors.rb)
-* `rails s` (or `rails s -b 0.0.0.0` if you don't use localhost)
+* `bin/setup`
+* `bin/rails s`
+* `bundle exec sidekiq`
 * install the Frontend part to test it [Sveltekit Sync / Async (boilerplate)](https://github.com/jyclem/sveltekit-sync-async-boilerplate)
 
 ## Goals
@@ -13,7 +13,7 @@
 This project has 2 main goals:
 
 * **Suggest a way of structuring your files and folders** so that the project remains clear and maintenable no matter the size it gets.
-* Allow to develop **one single endpoint** that can be used with a **classic API**, or using **polling**, or using **websocket**, reusing each time the **same authorization, sanitization and serialization mechanisms**.
+* Allow to develop **one single endpoint** that can be used with **classic API**, **polling**, or **websocket**, reusing each time the **same authorization, sanitization and serialization mechanisms**. It means that **we develop the endpoint only once**, and then we can access to it however we want.
 
 ## Why
 
@@ -25,7 +25,7 @@ About the second goal, developing one endpoint that can be accessed synchronousl
 ## How
 
 At first, I thought about overriding actionpack (and more specifically the action_dispatch and route_set modules) to force the use of the new "controllers" mechanism (ie one file per action dedicated to authorization/sanitization/serialization), but it appeared to be more complicated than I expected, and I quickly concluded that it would be a mess to maintain as Rails would evolve. Also I wanted to keep all the basic Rails mechanisms if needed.
-So I decided to add a few files that would allow to replace the basic mechanism only when wanted. The main file is `app/controllers/sync_async_controller.rb`, and we just the need the Rails controller to inherit from it to trigger the magic.
+So I decided to add a few files that would allow to replace the basic mechanism only when wanted. The main file is `app/controllers/sync_async_controller.rb`, and we just need to inherit this file in a controller to trigger the magic.
 
 The process is quite simple (you can see an example with the Todo controller):
 * we define a route as usual in `config/routes.rb`

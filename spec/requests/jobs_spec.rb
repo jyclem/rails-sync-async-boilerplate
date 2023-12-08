@@ -14,7 +14,7 @@ require 'rails_helper'
 # of tools you can use to make these specs even more expressive, but we're
 # sticking to rails and rspec-rails APIs to keep things simple and stable.
 
-RSpec.describe '/jobs', type: :request do
+RSpec.describe '/jobs' do
   # This should return the minimal set of attributes required to create a valid
   # Job. As you add validations to Job, be sure to
   # adjust the attributes here as well.
@@ -37,11 +37,11 @@ RSpec.describe '/jobs', type: :request do
   before { allow(Sidekiq::Status).to receive(:status).and_return('job_status') }
 
   describe 'GET /show' do
-    it 'renders a successful response' do
+    it 'renders a successful response' do # rubocop:disable RSpec/MultipleExpectations
       get job_url('1'), as: :json
 
       expect(response).to be_successful
-      expect(JSON.parse(response.body)).to eql('id' => '1', 'status' => 'job_status')
+      expect(response.parsed_body).to eql('id' => '1', 'status' => 'job_status')
     end
   end
 end

@@ -14,7 +14,7 @@ class UserChannelReceiveJob
     # if data contains a "1" key it means that the client sends multiple actions at once
     # so we process them in order, one after the other
     if data['1']
-      data.sort.each { |_i, request| process_request(request, request_settings(request)) }
+      data.sort.each { |index_request| process_request(index_request[1], request_settings(index_request[1])) }
     else
       process_request(data, request_settings(data))
     end
